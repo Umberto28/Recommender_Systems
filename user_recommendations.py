@@ -39,9 +39,9 @@ def create_recom_table(ratings_df):
     return df
 
 def pearson_similarity(user_a, user_b, movies):
-    num = 0
-    den_a = 0
-    den_b = 0
+    num_list = []
+    den_a_list = []
+    den_b_list = []
     
     r_mean_a = user_a['mean']
     r_mean_b = user_b['mean']
@@ -49,9 +49,13 @@ def pearson_similarity(user_a, user_b, movies):
     for m in movies:
         r_a = user_a[m] - r_mean_a
         r_b = user_b[m] - r_mean_b
-        num += (r_a) * (r_b)
-        den_a += math.pow(r_a, 2)
-        den_b += math.pow(r_b, 2)
+        num_list.append((r_a) * (r_b))
+        den_a_list.append(math.pow(r_a, 2))
+        den_b_list.append(math.pow(r_b, 2))
+
+    num = np.sum(num_list)
+    den_a = np.sum(den_a_list)
+    den_b = np.sum(den_b_list)
     
     den = math.sqrt(den_a * den_b)
     if den == 0:
@@ -62,6 +66,7 @@ def pearson_similarity(user_a, user_b, movies):
 
 def custom_cosine_similarity(user_a, user_b, movies_ids, movies_df):
     df = movies_df.copy()
+
     # Get weights of user_a movies genres for similarity from user_a vector and "movies" dataframe
     user_a_df = user_a.to_frame('rating').join(df.set_index('movieId')['genres'])
     genres_a = user_a_df['genres'].str.get_dummies()
@@ -84,10 +89,10 @@ def custom_cosine_similarity(user_a, user_b, movies_ids, movies_df):
     return norm_sim
 
 def prediction_function(user_a, users, movie, recom_df):
-    df = recom_df.copy()
+    df = recom_df
     r_mean_a = df.at[user_a, 'mean']
-    num = 0
-    den = 0
+    num_list = []
+    den_list = []
 
     for u in users:
         r_m_b = df.at[u['id'], movie]
@@ -95,9 +100,12 @@ def prediction_function(user_a, users, movie, recom_df):
             sim = u['sim']
             r_mean_b = df.at[u['id'], 'mean']
             r_b = r_m_b - r_mean_b
-            num += sim * r_b
-            den += sim
+            num_list.append(sim * r_b)
+            den_list.append(sim)
     
+    num = np.sum(num_list)
+    den = np.sum(den_list)
+
     if den == 0:
         return r_mean_a
     
@@ -119,31 +127,27 @@ def get_similar_users(user_row, user_id, recom_df, function, movies_df):
         for user_b_id in df.index:
             user_b = df.loc[user_b_id].dropna()
             movies = user_a.index.intersection(user_b.index)
-            sim = pearson_similarity(user_a, user_b, movies)
-            users_sim.append({'id': user_b_id, 'sim': sim})
+            users_sim.append({'id': user_b_id, 'sim': pearson_similarity(user_a, user_b, movies)})
     elif function == F[1]:
         for user_b_id in df.index:
             user_b = df.loc[user_b_id].dropna()
             movies = user_a.index.intersection(user_b.index)
-            sim = custom_cosine_similarity(user_a, user_b, movies, movies_df)
-            users_sim.append({'id': user_b_id, 'sim': sim})
+            users_sim.append({'id': user_b_id, 'sim': custom_cosine_similarity(user_a, user_b, movies, movies_df)})
     
     # Sort user similarities list in descending order
     users_sim_sorted = sorted(users_sim, key=lambda x: x['sim'], reverse=True)
     
     print(f'\nSimilarities ({function}): ')
-    for user in users_sim_sorted[:11]:
+    for user in users_sim_sorted[:10]:
         print(user)
     
-    return users_sim[:50]
+    users_sim_filt = users_sim_sorted[:50]
+    return users_sim_filt
 
 def get_recommendations(user_id, user, sim_users, recom_df):
-    suggestions = []
+    unseen_movies = user[user.isna()].index
 
-    for movie in user.index:
-        if pd.isna(user[movie]):
-            value = prediction_function(user_id, sim_users, movie, recom_df)
-            suggestions.append({'movie': movie, 'value': value})
+    suggestions = [{'movie': movie, 'value': prediction_function(user_id, sim_users, movie, recom_df)} for movie in unseen_movies]
     suggestions_sorted = sorted(suggestions, key=lambda x: x['value'], reverse=True)
     
     for sug in suggestions_sorted[:10]:
@@ -152,7 +156,7 @@ def get_recommendations(user_id, user, sim_users, recom_df):
     return suggestions_sorted
 
 def make_user_predictions(user_id, function, recom_df, movies_df):
-    df = recom_df.copy()
+    df = recom_df
     # Extract the user on which to make predictions
     user_row = df.loc[user_id]
 
@@ -167,7 +171,7 @@ def make_user_predictions(user_id, function, recom_df, movies_df):
 
     return movie_suggestions
 
-def main():
+if __name__ == '__main__':
     # Read the datsets and create dataframes
     ratings_df = read_dataset(P, T[0])
     movies_df = read_dataset(P, T[1])
@@ -176,7 +180,4 @@ def main():
     recom_df = create_recom_table(ratings_df)
     user_recom_pearson = make_user_predictions(U, F[0], recom_df, movies_df)
     user_recom_custom = make_user_predictions(U, F[1], recom_df, movies_df)
-    return
-
-if __name__ == '__main__':
-    main()
+    
