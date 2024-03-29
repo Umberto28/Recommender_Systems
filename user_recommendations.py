@@ -102,31 +102,7 @@ def custom_similarity(filt_user_a: pd.Series, filt_user_b: pd.Series, movies_ids
     
     return pncr * adf
 
-def prediction_function(user_a, users, movie, recom_df):
-    df = recom_df
-    r_mean_a = df.at[user_a, 'mean']
-    num_list = []
-    den_list = []
-
-    for u in users:
-        r_m_b = df.at[u['id'], movie]
-        if not pd.isna(r_m_b):
-            sim = u['sim']
-            r_mean_b = df.at[u['id'], 'mean']
-            r_b = r_m_b - r_mean_b
-            num_list.append(sim * r_b)
-            den_list.append(sim)
-    
-    num = np.sum(num_list)
-    den = np.sum(den_list)
-
-    if den == 0:
-        return r_mean_a
-    
-    div = num/den
-    return r_mean_a + div
-
-def get_similar_users(user_row, user_id, recom_df, function, movies_df):
+def get_similar_users(user_row: pd.Series, user_id: int, recom_df: pd.DataFrame, function: str, movies_df: pd.DataFrame):
     df = recom_df.copy()
     df = df.drop(labels = user_id, axis = 0) # Remove selected user from dataframe
     users_sim = []
@@ -158,9 +134,36 @@ def get_similar_users(user_row, user_id, recom_df, function, movies_df):
     users_sim_filt = users_sim_sorted[:50]
     return users_sim_filt
 
-def get_recommendations(user_id, user, sim_users, recom_df):
+def prediction_function(user_a: pd.Series, users: list, movie: int, recom_df: pd.DataFrame):
+    df = recom_df
+    r_mean_a = df.at[user_a, 'mean']
+    num_list = []
+    den_list = []
+
+    for u in users:
+        r_m_b = df.at[u['id'], movie]
+        if not pd.isna(r_m_b):
+            sim = u['sim']
+            r_mean_b = df.at[u['id'], 'mean']
+            r_b = r_m_b - r_mean_b
+            num_list.append(sim * r_b)
+            den_list.append(sim)
+    
+    num = np.sum(num_list)
+    den = np.sum(den_list)
+
+    if den == 0:
+        return r_mean_a
+    
+    div = num/den
+    return r_mean_a + div
+
+
+def get_recommendations(user_id: int, user: pd.Series, sim_users: list, recom_df: pd.DataFrame):
+    # Get the unseen movies of selected user
     unseen_movies = user[user.isna()].index
 
+    # Make prediction for all selected user's unseen movies
     suggestions = [{'movie': movie, 'value': prediction_function(user_id, sim_users, movie, recom_df)} for movie in unseen_movies]
     suggestions_sorted = sorted(suggestions, key=lambda x: x['value'], reverse=True)
     
@@ -169,7 +172,7 @@ def get_recommendations(user_id, user, sim_users, recom_df):
 
     return suggestions_sorted
 
-def make_user_predictions(user_id, function, recom_df, movies_df):
+def make_user_predictions(user_id: int, function: str, recom_df: pd.DataFrame, movies_df: pd.DataFrame):
     # Extract the user on which to make predictions
     user_row = recom_df.loc[user_id]
 
@@ -185,8 +188,10 @@ def make_user_predictions(user_id, function, recom_df, movies_df):
     return movie_suggestions
 
 if __name__ == '__main__':
+    # Convert dataset csv in dataframes
     recom_df, movies_df = dataset_to_dfs()
     
+    # Execute user recommendations using both Pearson and the custom similarity functions
     user_recom_pearson = make_user_predictions(U, SF[0], recom_df, movies_df)
     user_recom_custom = make_user_predictions(U, SF[1], recom_df, movies_df)
     
