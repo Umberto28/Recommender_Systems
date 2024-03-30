@@ -7,7 +7,7 @@ from sklearn.preprocessing import normalize
 P = './ml-latest-small/' # Directory PATH of tables
 T = ['ratings', 'movies', 'tags', 'links'] # Names of existent TABLES
 U = 610 # Selected USER (id) for recommendations
-SF = ['pearson', 'custom'] # SIMILARITY FUNCTIONS used
+SF = ['pearson', 'custom 1', 'custom 2'] # SIMILARITY FUNCTIONS used
 
 def dataset_to_dfs():
     # Read the datsets and create dataframes
@@ -65,34 +65,35 @@ def pearson_similarity(user_a: pd.Series, user_b: pd.Series, movies: pd.Index):
     
     return num/den
 
-# def custom_cosine_similarity(user_a: pd.Series, user_b: pd.Series, movies_ids: pd.Index, movies_df: pd.DataFrame):
-#     df = movies_df.copy()
+def custom_similarity1(user_a: pd.Series, user_b: pd.Series, movies_ids: pd.Index, movies_df: pd.DataFrame):
+    # Calculate the Percentage of Non Common Ratings (pnrc), which considers the number of co-rated items of the two users
+    pncr = np.exp(- ((movies_df.shape[0] - len(movies_ids))/movies_df.shape[0]))
 
-#     # Get weights of user_a movies genres for similarity from user_a vector and "movies" dataframe
-#     user_a_df = user_a.to_frame('rating').join(df.set_index('movieId')['genres'])
-#     genres_a = user_a_df['genres'].str.get_dummies()
-#     weights_a = genres_a.T.dot(user_a_df['rating']) / genres_a.sum()
+    # Get weights of user_a movies genres for similarity from user_a/user_b vector and "movies" dataframe
+    user_a_df = user_a.to_frame('rating').join(movies_df.set_index('movieId')['genres'])
+    genres_a = user_a_df['genres'].str.get_dummies()
+    weights_a = genres_a.T.dot(user_a_df['rating']) / genres_a.sum()
     
-#     # Get weights of user_b movies genres for similarity from user_b vector and "movies" dataframe
-#     user_b_df = user_b.to_frame('rating').join(df.set_index('movieId')['genres'])
-#     genres_b = user_b_df['genres'].str.get_dummies()
-#     weights_b = genres_b.T.dot(user_b_df['rating']) / genres_b.sum()
+    user_b_df = user_b.to_frame('rating').join(movies_df.set_index('movieId')['genres'])
+    genres_b = user_b_df['genres'].str.get_dummies()
+    weights_b = genres_b.T.dot(user_b_df['rating']) / genres_b.sum()
 
-#     # Get weighted users vectors and normalize them
-#     weighted_ratings_a = user_a.loc[movies_ids] * genres_a.loc[movies_ids].dot(weights_a)
-#     weighted_ratings_b = user_b.loc[movies_ids] * genres_b.loc[movies_ids].dot(weights_b)
-#     normalized_ratings_a = normalize(weighted_ratings_a.values.reshape(1, -1))
-#     normalized_ratings_b = normalize(weighted_ratings_a.values.reshape(1, -1))
+    # Get weighted user_a/user_b vector and normalize it
+    weighted_ratings_a = user_a.loc[movies_ids] * genres_a.loc[movies_ids].dot(weights_a)
+    normalized_ratings_a = normalize(weighted_ratings_a.values.reshape(1, -1))
 
-#     # Get cosine similarity between normalized vectors
-#     sim = cosine_similarity(normalized_ratings_a, normalized_ratings_b)[0][0]
-#     # norm_factor = np.tanh(len(movies_ids))
-#     # weighted_sim = (sim * 0.8) + ((norm_factor) * 0.2)
-#     return sim
+    weighted_ratings_b = user_b.loc[movies_ids] * genres_b.loc[movies_ids].dot(weights_b)
+    normalized_ratings_b = normalize(weighted_ratings_b.values.reshape(1, -1))
 
-def custom_similarity(filt_user_a: pd.Series, filt_user_b: pd.Series, movies_ids: pd.Index, n_movies: int):    
+    # Get cosine similarity between normalized vectors
+    sim = cosine_similarity(normalized_ratings_a, normalized_ratings_b)[0][0]
+    return sim * pncr
+
+def custom_similarity2(filt_user_a: pd.Series, filt_user_b: pd.Series, movies_ids: pd.Index, n_movies: int):
+    # Compute similiraty based on Percentage of Non Common Ratings (pnrc), which considers the number of co-rated items of the two users...
     pncr = np.exp(- ((n_movies - len(movies_ids))/n_movies))
 
+    # ...and Absolute Difference of Ratings (adf), which considers differences in users' ratings
     num_x = (filt_user_a - filt_user_b).abs()
     num_y = np.maximum(filt_user_a, filt_user_b)
     num = np.exp(- (num_x / num_y))
@@ -100,6 +101,7 @@ def custom_similarity(filt_user_a: pd.Series, filt_user_b: pd.Series, movies_ids
     
     adf /= len(movies_ids)
     
+    # Return the product of the two measures
     return pncr * adf
 
 def get_similar_users(user_row: pd.Series, user_id: int, recom_df: pd.DataFrame, function: str, movies_df: pd.DataFrame):
@@ -122,7 +124,15 @@ def get_similar_users(user_row: pd.Series, user_id: int, recom_df: pd.DataFrame,
         for user_b_id in df.index:
             user_b = df.loc[user_b_id].dropna()
             movies = user_a.index.intersection(user_b.index)
-            users_sim.append({'id': user_b_id, 'sim': custom_similarity(user_a[movies], user_b[movies], movies, movies_df.shape[0])})
+            users_sim.append({'id': user_b_id, 'sim': custom_similarity1(user_a, user_b, movies, movies_df)}) # Custom Cosine Similarity
+    elif function == SF[2]:
+        for user_b_id in df.index:
+            user_b = df.loc[user_b_id].dropna()
+            movies = user_a.index.intersection(user_b.index)
+            users_sim.append({'id': user_b_id, 'sim': custom_similarity2(user_a[movies], user_b[movies], movies, movies_df.shape[0])}) # Custom pnrc-adf similarity
+    else:
+        print('There is no function with selected name')
+        return
     
     # Sort user similarities list in descending order
     users_sim_sorted = sorted(users_sim, key=lambda x: x['sim'], reverse=True)
@@ -131,20 +141,21 @@ def get_similar_users(user_row: pd.Series, user_id: int, recom_df: pd.DataFrame,
     for user in users_sim_sorted[:10]:
         print(user)
     
+    # Return the first 50 similar users
     users_sim_filt = users_sim_sorted[:50]
     return users_sim_filt
 
 def prediction_function(user_a: pd.Series, users: list, movie: int, recom_df: pd.DataFrame):
-    df = recom_df
-    r_mean_a = df.at[user_a, 'mean']
+    # Calculate predictions with a common function
+    r_mean_a = recom_df.at[user_a, 'mean']
     num_list = []
     den_list = []
 
     for u in users:
-        r_m_b = df.at[u['id'], movie]
+        r_m_b = recom_df.at[u['id'], movie]
         if not pd.isna(r_m_b):
             sim = u['sim']
-            r_mean_b = df.at[u['id'], 'mean']
+            r_mean_b = recom_df.at[u['id'], 'mean']
             r_b = r_m_b - r_mean_b
             num_list.append(sim * r_b)
             den_list.append(sim)
@@ -184,6 +195,13 @@ def make_user_predictions(user_id: int, function: str, recom_df: pd.DataFrame, m
         sim_users = get_similar_users(user_row, user_id, recom_df, SF[1], movies_df)
         print(f'\nRecommendations ({SF[1]}): ')
         movie_suggestions = get_recommendations(user_id, user_row, sim_users, recom_df)
+    elif function == SF[2]:
+        sim_users = get_similar_users(user_row, user_id, recom_df, SF[2], movies_df)
+        print(f'\nRecommendations ({SF[2]}): ')
+        movie_suggestions = get_recommendations(user_id, user_row, sim_users, recom_df)
+    else:
+        print('There is no function with selected name')
+        return
 
     return movie_suggestions
 

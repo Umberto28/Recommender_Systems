@@ -1,17 +1,17 @@
 import pandas as pd
-from user_recommendations import make_user_predictions, dataset_to_dfs
+from user_recommendations import make_user_predictions, dataset_to_dfs, SF
 
 U = [1, 610, 207] # Selected USERS (ids) for group recommendations
 PR = 0 # The "PENALTY RATING" replacing ratings of movies not recommended to all group's users in avarage Aggregation
 AM = ['avarage', 'least misery'] # AGGREGATION METHODS: Avarage and Least Misery
 
-def make_group_predictions(recom_df: pd.DataFrame, movies_df: pd.DataFrame, users: list[int]):
+def make_group_predictions(recom_df: pd.DataFrame, movies_df: pd.DataFrame, users: list[int], sim_method: str):
     individual_recoms: list[pd.DataFrame] = []
     
     # Make prediction for each user in the group and normalize scores
     for u in users:
         print(f'\n---------------------- USER {u} ----------------------')
-        user_predictions = make_user_predictions(u, 'custom', recom_df, movies_df)
+        user_predictions = make_user_predictions(u, sim_method, recom_df, movies_df)
         user_predictions_df = pd.DataFrame(user_predictions).set_index('movie')
         normalized_predictions_df = normalize_recoms(user_predictions_df, 0.5, 5.0)
         print(normalized_predictions_df)
@@ -41,22 +41,6 @@ def normalize_recoms(recoms: pd.Series, min_value: float, max_value: float):
     
     normalized_ratings = (recoms - min_rating) / (max_rating - min_rating) * (max_value - min_value) + min_value
     return normalized_ratings
-
-# def get_disagreements(group_recom: pd.DataFrame):
-#     group_recom_dis = pd.DataFrame(index=group_recom.index)
-#     group_recom_dis['std'] = group_recom.std(axis=1, skipna=True)
-#     # group_recom_dis['range'] = group_recom.max(axis=1) - group_recom.min(axis=1)
-#     # group_recom_dis['var'] = group_recom.var(axis=1)
-    
-#     print('\nUsers Disagreements: ')
-#     print(group_recom_dis)
-
-#     inverted_std = 1 / group_recom_dis['std']
-
-#     weights = inverted_std / inverted_std.sum()
-#     weighted_group_recom = group_recom.mul(weights, axis=0)
-
-#     return weighted_group_recom
 
 def get_aggregation_and_fairness(group_recom: pd.DataFrame, recoms: list[pd.DataFrame], agg_methods: list[str], dis: bool):
     # Get group recommendation aggregation considering or not users' disagreement (choosen using 'dis' parameter)
@@ -98,6 +82,9 @@ def standard_aggregation(group_recom: pd.DataFrame, agg_method: list[str]):
         agg_recom = df.mean(axis=1)
     elif agg_method == 'least misery':
         agg_recom = df.agg(lambda x: min(x) * (x.dropna().shape[0]/3) if x.dropna().shape[0] == 1 or x.dropna().shape[0] == 3 else min(x)/2, axis=1)
+    else:
+        print('There is no function with selected name')
+        return
     
     agg_recom.sort_values(ascending=False, inplace=True)
     print('\nAggregation list: ')
@@ -156,7 +143,7 @@ if __name__ == '__main__':
     recom_df, movies_df = dataset_to_dfs()
     
     # Execute users' individual recommendations and merge them in one dataframe
-    individual_recoms, group_recom = make_group_predictions(recom_df, movies_df, U)
+    individual_recoms, group_recom = make_group_predictions(recom_df, movies_df, U, SF[1])
     
     # Aggregate results using standard aggregation methods (which don't consider disagreement) and get fairness
     print('\n---------------------- NO DISAGREEMENT ----------------------')
