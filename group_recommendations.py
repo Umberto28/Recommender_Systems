@@ -46,7 +46,7 @@ def get_aggregation_and_fairness(group_recom: pd.DataFrame, recoms: list[pd.Data
     # Get group recommendation aggregation considering or not users' disagreement (choosen using 'dis' parameter)
     if dis:
         print('\n-------------- UPWARD LEVELING AGGREGATION --------------')
-        ul_agg_recom = ul_aggregation(group_recom, [0.4, 0.2, 0.4])
+        ul_agg_recom = ul_aggregation(group_recom, [0.35, 0.2, 0.45])
 
         print('\nAll:\n')
         ul_group_fairness = fairness(recoms, ul_agg_recom, True)

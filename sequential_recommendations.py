@@ -60,7 +60,7 @@ if __name__ == '__main__':
     group = get_group_users(True, recom_df, movies_df, UID)
 
     # Compute group recommendation and get recommended lists
-    individual_recoms, group_recom = make_group_predictions(recom_df, movies_df, group, SF[1])
+    individual_recoms, group_recom = make_group_predictions(recom_df, movies_df, group, SF[2])
 
     # Initialize variables to use in each iteration of sequential recommendation and compute it
     alpha = 0

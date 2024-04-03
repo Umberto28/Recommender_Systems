@@ -66,7 +66,7 @@ def pearson_similarity(user_a: pd.Series, user_b: pd.Series, movies: pd.Index):
     return num/den
 
 def custom_similarity1(user_a: pd.Series, user_b: pd.Series, movies_ids: pd.Index, movies_df: pd.DataFrame):
-    # Calculate the Percentage of Non Common Ratings (pnrc), which considers the number of co-rated items of the two users
+    # Calculate the Percentage of Non Common Ratings (pncr), which considers the number of co-rated items of the two users
     pncr = np.exp(- ((movies_df.shape[0] - len(movies_ids))/movies_df.shape[0]))
 
     # Get weights of user_a movies genres for similarity from user_a/user_b vector and "movies" dataframe
@@ -90,7 +90,7 @@ def custom_similarity1(user_a: pd.Series, user_b: pd.Series, movies_ids: pd.Inde
     return sim * pncr
 
 def custom_similarity2(filt_user_a: pd.Series, filt_user_b: pd.Series, movies_ids: pd.Index, n_movies: int):
-    # Compute similiraty based on Percentage of Non Common Ratings (pnrc), which considers the number of co-rated items of the two users...
+    # Compute similiraty based on Percentage of Non Common Ratings (pncr), which considers the number of co-rated items of the two users...
     pncr = np.exp(- ((n_movies - len(movies_ids))/n_movies))
 
     # ...and Absolute Difference of Ratings (adf), which considers differences in users' ratings
@@ -129,7 +129,7 @@ def get_similar_users(user_row: pd.Series, user_id: int, recom_df: pd.DataFrame,
         for user_b_id in df.index:
             user_b = df.loc[user_b_id].dropna()
             movies = user_a.index.intersection(user_b.index)
-            users_sim.append({'id': user_b_id, 'sim': custom_similarity2(user_a[movies], user_b[movies], movies, movies_df.shape[0])}) # Custom pnrc-adf similarity
+            users_sim.append({'id': user_b_id, 'sim': custom_similarity2(user_a[movies], user_b[movies], movies, movies_df.shape[0])}) # Custom pncr-adf similarity
     else:
         print('There is no function with selected name')
         return
