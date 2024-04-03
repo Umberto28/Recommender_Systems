@@ -11,9 +11,7 @@ Implement a user-based collaborative filtering approach, in order to create a si
 
 ### Assignment 2
 Implement existing approaches for producing group recommendations and propose some ideas about group aggregation and implement them for the same topic.
-- **Avarage Aggregation** <br />
-- **Least Misery Aggregation** <br />
-- **[Upward Leveling Aggregation](https://www.sciencedirect.com/science/article/pii/S0957417417307108?fr=RR-2&ref=pdf_download&rr=86dae1893b7a77ff)** <br />
+- **Used Aggregation functions**: Avarage, Least Misery, [Upward Leveling](https://www.sciencedirect.com/science/article/pii/S0957417417307108?fr=RR-2&ref=pdf_download&rr=86dae1893b7a77ff) <br />
 
 ### Assignment 3
 Implement existing approaches for producing sequential group recommendations proposing some ideas and implement them for the same topic.
