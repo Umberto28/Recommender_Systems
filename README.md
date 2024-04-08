@@ -18,3 +18,6 @@ Implement existing approaches for producing sequential group recommendations pro
 - **Used Similarity functions**: Custom cosine similarity, [Pncr-Adf similarity](https://www.researchgate.net/publication/335988033_A_new_Similarity_Measure_for_Collaborative_Filtering_based_Recommender_Systems#full-text) <br />
 - **Used Prediction function**: Common prediction function <br />
 - **Used Aggregation function**: [Upward Leveling Aggregation](https://www.sciencedirect.com/science/article/pii/S0957417417307108?fr=RR-2&ref=pdf_download&rr=86dae1893b7a77ff) <br />
+
+> [!NOTE]
+> In order to perform all the assignment, you have to execute the corresponding py file (ass1 -> user_recom; ass2 -> group_recom; ass3 -> sequential_recom).
