@@ -45,14 +45,14 @@ def satisfaction(group_recoms: pd.DataFrame, agg_recom: pd.Series, users: list[i
 
     print('\nGroup Satisfaction:')
     print(g_sat)
-    print('Overall Group Satisfaction:')
-    print(g_satO)
+    # print('Overall Group Satisfaction:')
+    # print(g_satO)
     print('Group Disagreement:')
     print(groupDis)
     
     return individual_sat, alpha
 
-if __name__ == '__main__':
+def main_sequential():
     # Convert dataset csv in dataframes
     recom_df, movies_df = dataset_to_dfs()
 
@@ -74,3 +74,6 @@ if __name__ == '__main__':
         individual_sat, alpha = satisfaction(group_recom, agg_recom, group, T, i+1, individual_sat)
         for j in range(len(group)):
             group_recom[group_recom.columns[j]] *= (1 - individual_sat.at[j, 'sat'])
+
+if __name__ == '__main__':
+    main_sequential()

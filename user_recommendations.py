@@ -7,7 +7,7 @@ from sklearn.preprocessing import normalize
 P = './ml-latest-small/' # Directory PATH of tables
 T = ['ratings', 'movies', 'tags', 'links'] # Names of existent TABLES
 U = 610 # Selected USER (id) for recommendations
-SF = ['pearson', 'custom 1', 'custom 2'] # SIMILARITY FUNCTIONS used
+SF = ['pearson', 'custom cosine', 'custom pncr-adf'] # SIMILARITY FUNCTIONS used
 
 def dataset_to_dfs():
     # Read the datsets and create dataframes
@@ -22,15 +22,15 @@ def dataset_to_dfs():
 def read_dataset(local_path: str, table: str):
     # Import the selected csv file (table) into dataframe and print its first 10 rows
     df = pd.read_csv(local_path + table + '.csv')
-    print(f'\nTable: {table}')
-    print(df.head(15))
-    print('\nRows, Columns:')
-    print(df.shape)
+    # print(f'\nTable: {table}')
+    # print(df.head(15))
+    # print('\nRows, Columns:')
+    # print(df.shape)
 
-    # More infos from "ratings" table
-    if table == 'ratings':
-        print('Max UserId, Max MovieId:')
-        print(str(df['userId'].max()) + ', ' + str(df['movieId'].max()))
+    # # More infos from "ratings" table
+    # if table == 'ratings':
+    #     print('Max UserId, Max MovieId:')
+    #     print(str(df['userId'].max()) + ', ' + str(df['movieId'].max()))
 
     return df
 
@@ -111,8 +111,7 @@ def get_similar_users(user_row: pd.Series, user_id: int, recom_df: pd.DataFrame,
 
     # Consider only selected user's existing rating values and print them
     user_a = user_row.dropna() 
-    print('\nSelected User: ')
-    print(user_a)
+    print(f'\nSelected User: {user_a.name}')
     
     # Get similarities between selected user and all other users on common movies, using function passed as parameter
     if function == SF[0]:
@@ -205,11 +204,13 @@ def make_user_predictions(user_id: int, function: str, recom_df: pd.DataFrame, m
 
     return movie_suggestions
 
-if __name__ == '__main__':
+def main_user():
     # Convert dataset csv in dataframes
     recom_df, movies_df = dataset_to_dfs()
     
     # Execute user recommendations using both Pearson and the custom similarity functions
     user_recom_pearson = make_user_predictions(U, SF[0], recom_df, movies_df)
     user_recom_custom = make_user_predictions(U, SF[1], recom_df, movies_df)
-    
+
+if __name__ == '__main__':
+    main_user()

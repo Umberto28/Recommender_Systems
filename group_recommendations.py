@@ -14,7 +14,6 @@ def make_group_predictions(recom_df: pd.DataFrame, movies_df: pd.DataFrame, user
         user_predictions = make_user_predictions(u, sim_method, recom_df, movies_df)
         user_predictions_df = pd.DataFrame(user_predictions).set_index('movie')
         normalized_predictions_df = normalize_recoms(user_predictions_df, 0.5, 5.0)
-        print(normalized_predictions_df)
         individual_recoms.append(normalized_predictions_df)
     
     # Merging all individual prediction in a single dataframe
@@ -29,8 +28,8 @@ def make_group_predictions(recom_df: pd.DataFrame, movies_df: pd.DataFrame, user
     
     print('\nUsers Recommendations')
     print(f'\n{group_recom}')
-    print('\nRecom describe')
-    print(group_recom.describe(include='all'))
+    # print('\nRecom describe')
+    # print(group_recom.describe(include='all'))
 
     return individual_recoms, group_recom
 
@@ -48,10 +47,10 @@ def get_aggregation_and_fairness(group_recom: pd.DataFrame, recoms: list[pd.Data
         print('\n-------------- UPWARD LEVELING AGGREGATION --------------')
         ul_agg_recom = ul_aggregation(group_recom, [0.35, 0.2, 0.45])
 
-        print('\nAll:\n')
-        ul_group_fairness = fairness(recoms, ul_agg_recom, True)
-        print('Group Fairness:')
-        print(f'{ul_group_fairness}\n')
+        # print('\nAll:\n')
+        # ul_group_fairness = fairness(recoms, ul_agg_recom, True)
+        # print('Group Fairness:')
+        # print(f'{ul_group_fairness}\n')
         
         print('\nTop 100:\n')
         ul_group_fairness = fairness(recoms, ul_agg_recom, False, 100)
@@ -63,10 +62,10 @@ def get_aggregation_and_fairness(group_recom: pd.DataFrame, recoms: list[pd.Data
             print(f'\n-------------- {a.upper()} AGGREGATION --------------')
             agg_recom = standard_aggregation(group_recom, a)
             
-            print('\nAll:\n')
-            group_fairness = fairness(recoms, agg_recom, True)
-            print('Group Fairness:')
-            print(f'{group_fairness}\n')
+            # print('\nAll:\n')
+            # group_fairness = fairness(recoms, agg_recom, True)
+            # print('Group Fairness:')
+            # print(f'{group_fairness}\n')
             
             print('\nTop 100:\n')
             group_fairness = fairness(recoms, agg_recom, False, 100)
@@ -138,7 +137,7 @@ def fairness(individual_recoms: list[pd.DataFrame], agg_recom: pd.Series, all_li
 
     return group_fairness / len(individual_r)
 
-if __name__ == '__main__':
+def main_group():
     # Convert dataset csv in dataframes
     recom_df, movies_df = dataset_to_dfs()
     
@@ -152,4 +151,7 @@ if __name__ == '__main__':
     # Aggregate results using another aggregation method (which considers disagreement) and get fairness
     print('\n---------------------- WITH DISAGREEMENT ----------------------')
     get_aggregation_and_fairness(group_recom, individual_recoms, AM, True)
+
+if __name__ == '__main__':
+    main_group()
 
